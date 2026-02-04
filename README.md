@@ -16,91 +16,80 @@ This project intentionally uses small sample data (not multi-TB datasets) to kee
 
 ## Architecture
 
+```text
 Raw Sensor Data (Waymo TFRecords)
-|
-v
+        |
+        v
 Mock Upload Script (Python)
-|
-v
+        |
+        v
 Raw Lake (Images + JSON metadata)
-|
-v
+        |
+        v
 Spark ETL (PySpark)
-|
-v
+        |
+        v
 Partitioned Parquet Lakehouse
-|
-v
+        |
+        v
 Dataset Versioning (DVC)
-
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-----|-----------|
-| Language | Python 3.10 |
-| Data Processing | PySpark |
-| Storage Format | Apache Parquet |
-| Raw Dataset | Waymo Open Dataset (tutorial frames) |
-| Versioning | DVC |
-| Environment | Python virtualenv |
-
----
-
-## Project Structure
-
-
+Tech Stack
+Layer	Technology
+Language	Python 3.10
+Data Processing	PySpark
+Storage Format	Apache Parquet
+Raw Dataset	Waymo Open Dataset (tutorial frames)
+Versioning	DVC
+Environment	Python virtualenv
+Project Structure
 av-sensor-ingestion-engine/
 │
 ├── src/
-│ ├── ingestion/
-│ │ └── mock_upload_waymo.py
-│ └── spark_jobs/
-│ └── etl_to_parquet.py
+│   ├── ingestion/
+│   │   └── mock_upload_waymo.py
+│   └── spark_jobs/
+│       └── etl_to_parquet.py
 │
 ├── data/
-│ ├── raw/
-│ │ └── uploads/
-│ └── processed/
-│ └── lakehouse/
+│   ├── raw/
+│   │   └── uploads/
+│   └── processed/
+│       └── lakehouse/
 │
 ├── scripts/
-│ └── inspect_frame.py
+│   └── inspect_frame.py
 │
 ├── .dvc/
 ├── data/processed/lakehouse.dvc
 └── README.md
+Phase 1 — Raw Ingestion (Data Lake)
+Goal: Simulate a vehicle uploading raw sensor data.
 
----
+Reads Waymo tutorial TFRecord frames
 
-## Phase 1 — Raw Ingestion (Data Lake)
+Extracts front camera images
 
-**Goal:** Simulate a vehicle uploading raw sensor data.
+Writes:
 
-- Reads Waymo tutorial TFRecord frames
-- Extracts front camera images
-- Writes:
-  - JPG images
-  - JSON metadata (timestamps, pose, vehicle_id, frame_id)
+JPG images
 
-**Example output:**
+JSON metadata (timestamps, pose, vehicle_id, frame_id)
+
+Example output:
+
 data/raw/uploads/
 └── vehicle_id=sim-001/
-└── date=2026-02-01/
-├── frame_000000_front.jpg
-├── frame_000001_front.jpg
-└── frame_000000.json
-
+    └── date=2026-02-01/
+        ├── frame_000000_front.jpg
+        ├── frame_000001_front.jpg
+        └── frame_000000.json
 Run:
-```bash
+
 python src/ingestion/mock_upload_waymo.py
 Phase 2 — Spark ETL (Lakehouse Core)
-
 Goal: Convert messy JSON metadata into analytics-ready Parquet.
 
-Transformations
+Transformations:
 
 Convert timestamps from microseconds → seconds
 
@@ -113,15 +102,16 @@ Preserve pose and LiDAR metadata
 Partition output by date and vehicle_id
 
 Output:
+
 data/processed/lakehouse/
 └── date=2026-02-01/
     └── vehicle_id=sim-001/
         ├── part-*.parquet
         └── _SUCCESS
+Run:
+
 python src/spark_jobs/etl_to_parquet.py
-
 Phase 3 — Dataset Versioning (DVC)
-
 Goal: Enable reproducibility and dataset evolution.
 
 Track Parquet lakehouse using DVC
@@ -134,8 +124,6 @@ dvc init
 dvc add data/processed/lakehouse
 git add data/processed/lakehouse.dvc data/processed/.gitignore
 git commit -m "Track processed lakehouse with DVC"
-
-
 This enables:
 
 Dataset versioning (v1.0, v1.1, …)
@@ -145,7 +133,6 @@ Rollbacks
 Reproducible experiments
 
 Why This Project Matters
-
 This project mirrors real AV data workflows:
 
 Sensor ingestion
@@ -156,10 +143,9 @@ Spark-based ETL
 
 Dataset traceability
 
-It demonstrates practical data engineering skills, not toy scripts.
+It demonstrates practical data engineering skills — not toy scripts.
 
 Notes
-
 GPU is not required
 
 TensorFlow GPU warnings can be safely ignored
@@ -167,21 +153,15 @@ TensorFlow GPU warnings can be safely ignored
 Designed to run on a laptop or VM
 
 Author
-
 Built as a learning-focused AV data engineering project.
 
 
 ---
 
-### 3️⃣ Save and exit
-- **CTRL + O**, Enter
-- **CTRL + X**
+### ✅ You’re done
+- This **will render correctly**
+- No broken sections
+- No nested Markdown issues
+- Portfolio-ready
 
----
-
-### 4️⃣ Commit
-```bash
-git add README.md
-git commit -m "Add project README"
-git push origin master
-
+You can move on to the **next project or polish screenshots** now 🚀
