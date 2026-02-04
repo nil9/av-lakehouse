@@ -1,0 +1,23 @@
+{
+  "name": "VinFast-AV-Sample-Waymo",
+
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+
+  "runArgs": ["--network=host"],
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter"
+      ]
+    }
+  },
+
+  "forwardPorts": [4040],
+
+  "postCreateCommand": "pip install --upgrade pip"
+}
+

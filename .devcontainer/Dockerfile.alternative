@@ -1,0 +1,53 @@
+# Alternative Dockerfile with Ubuntu base for better network stability
+FROM ubuntu:22.04
+
+# ---- Prevent interactive prompts ----
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ---- System dependencies ----
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      python3.10 \
+      python3.10-dev \
+      python3-pip \
+      python3.10-venv \
+      openjdk-11-jdk \
+      git \
+      curl \
+      wget \
+      build-essential \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+# ---- Set Python 3.10 as default ----
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 \
+ && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
+
+# ---- Python tooling ----
+RUN pip3 install --upgrade pip setuptools wheel
+
+# ---- AV + Spark dependencies ----
+# Install TensorFlow first to avoid conflicts
+RUN pip3 install --no-cache-dir tensorflow==2.11.0
+
+# Install Waymo dataset
+RUN pip3 install --no-cache-dir waymo-open-dataset-tf-2-11-0==1.6.1
+
+# Install Spark and data processing tools
+RUN pip3 install --no-cache-dir \
+    pyspark==3.4.0 \
+    pandas \
+    numpy \
+    matplotlib \
+    seaborn
+
+# ---- Java environment for Spark ----
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV PYSPARK_PYTHON=python3
+ENV PYTHONPATH=/usr/local/lib/python3.10/dist-packages
+
+# ---- Reset frontend ----
+ENV DEBIAN_FRONTEND=dialog
+
+# ---- Working directory ----
+WORKDIR /workspace
