@@ -33,15 +33,23 @@ Partitioned Parquet Lakehouse
         |
         v
 Dataset Versioning (DVC)
-Tech Stack
-Layer	Technology
-Language	Python 3.10
-Data Processing	PySpark
-Storage Format	Apache Parquet
-Raw Dataset	Waymo Open Dataset (tutorial frames)
-Versioning	DVC
-Environment	Python virtualenv
-Project Structure
+
+```
+---
+
+```md
+## Tech Stack
+
+| Layer | Technology |
+|------|------------|
+| Language | Python 3.10 |
+| Data Processing | PySpark |
+| Storage Format | Apache Parquet |
+| Raw Dataset | Waymo Open Dataset (tutorial frames) |
+| Versioning | DVC |
+| Environment | Python virtualenv |
+
+```text
 av-sensor-ingestion-engine/
 │
 ├── src/
@@ -62,6 +70,7 @@ av-sensor-ingestion-engine/
 ├── .dvc/
 ├── data/processed/lakehouse.dvc
 └── README.md
+```
 Phase 1 — Raw Ingestion (Data Lake)
 Goal: Simulate a vehicle uploading raw sensor data.
 
@@ -158,10 +167,3 @@ Built as a learning-focused AV data engineering project.
 
 ---
 
-### ✅ You’re done
-- This **will render correctly**
-- No broken sections
-- No nested Markdown issues
-- Portfolio-ready
-
-You can move on to the **next project or polish screenshots** now 🚀
