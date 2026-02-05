@@ -1,6 +1,35 @@
-.venv-waymo/
+# =====================
+# Python / Virtualenv
+# =====================
+.venv*
+venv*
+.env
 __pycache__/
 *.pyc
-.DS_Store
+.ipynb_checkpoints/
+
+# =====================
+# VS Code
+# =====================
 .vscode/
-.env
+
+# =====================
+# OS
+# =====================
+.DS_Store
+
+# =====================
+# Data (tracked by DVC, not Git)
+# =====================
+data/bronze/
+data/silver/
+data/gold/
+data/raw/
+data/processed/
+
+# =====================
+# Spark / Big data
+# =====================
+*.parquet
+_SUCCESS
+

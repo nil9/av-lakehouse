@@ -1,0 +1,6 @@
+outs:
+- md5: 3f27fab4a74fdc8996752c081b77a1de.dir
+  size: 8478
+  nfiles: 6
+  hash: md5
+  path: lakehouse
