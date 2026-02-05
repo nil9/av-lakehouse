@@ -17,22 +17,22 @@ This project intentionally uses small sample data (not multi-TB datasets) to kee
 ## Architecture
 
 ```text
-Raw Sensor Data (Waymo TFRecords)
-        |
-        v
-Mock Upload Script (Python)
-        |
-        v
-Raw Lake (Images + JSON metadata)
-        |
-        v
-Spark ETL (PySpark)
-        |
-        v
-Partitioned Parquet Lakehouse
-        |
-        v
+
+Raw Lake (Bronze)
+- Images + raw JSON metadata
+|
+v
+Spark ETL (Bronze → Silver)
+|
+v
+Cleaned & Partitioned Parquet (Silver)
+|
+v
+Aggregations / Analytics Tables (Gold)
+|
+v
 Dataset Versioning (DVC)
+
 
 ```
 ---
@@ -56,24 +56,46 @@ av-sensor-ingestion-engine/
 │
 ├── src/
 │   ├── ingestion/
-│   │   └── mock_upload_waymo.py
+│   │   └── bronze_ingestion.py          # TFRecords → Bronze (images + JSON)
+│   │
 │   └── spark_jobs/
-│       └── etl_to_parquet.py
+│       ├── silver_transform.py          # Bronze → Silver Parquet
+│       └── gold_aggregation.py          # Silver → Gold aggregates
 │
 ├── data/
-│   ├── raw/
-│   │   └── uploads/
-│   └── processed/
-│       └── lakehouse/
+│   ├── bronze/
+│   │   └── vehicle_id=sim-001/
+│   │       └── date=2026-02-01/
+│   │           ├── frame_000000_front.jpg
+│   │           ├── frame_000000.json
+│   │           └── ...
+│   │
+│   ├── silver/
+│   │   └── date=2026-02-01/
+│   │       └── vehicle_id=sim-001/
+│   │           ├── part-*.snappy.parquet
+│   │           └── _SUCCESS
+│   │
+│   └── gold/
+│       └── date=2026-02-01/
+│           └── vehicle_id=sim-001/
+│               ├── part-*.snappy.parquet
+│               └── _SUCCESS
 │
 ├── scripts/
 │   └── inspect_frame.py
 │
 ├── .dvc/
-├── data/processed/lakehouse.dvc
+├── data/silver.dvc                      # DVC tracks Silver (core dataset)
+├── data/gold.dvc                        # optional but good
+│
+├── .gitignore
+├── .dvcignore
+├── requirements.txt
 └── README.md
+
 ```
-## Phase 1 — Raw Ingestion (Data Lake)
+## Phase 1 — Bronze Layer: Raw Ingestion
 
 **Goal**: Simulate a vehicle uploading raw sensor data.
 
@@ -99,11 +121,16 @@ data/raw/uploads/
 Run:
 
 ```text
-python src/ingestion/mock_upload_waymo.py
+
+python src/ingestion/bronze_ingestion.py
+
 ```
 
-## Phase 2 — Spark ETL (Lakehouse Core)
+## Phase 2 — Silver Layer: Spark ETL & Normalization
 **Goal**: Convert messy JSON metadata into analytics-ready Parquet.
+
+This layer applies schema enforcement, normalization, and partitioning to make data query- and analytics-ready.
+
 
 **Transformations**:
 
@@ -115,24 +142,42 @@ python src/ingestion/mock_upload_waymo.py
 
 - Preserve pose and LiDAR metadata
 
-- Partition output by date and vehicle_id
+- Partition output by **date** and **vehicle_id**
 
 Output:
 
 ```text
-data/processed/lakehouse/
+
+data/silver/
 └── date=2026-02-01/
     └── vehicle_id=sim-001/
-        ├── part-*.parquet
+        ├── part-*.snappy.parquet
         └── _SUCCESS
+
 ```
 Run:
 
 ```text
-python src/spark_jobs/etl_to_parquet.py
-```
 
-## Phase 3 — Dataset Versioning (DVC)
+python src/spark_jobs/silver_transform.py
+
+```
+## Phase 3 — Gold Layer: Aggregations & Analytics
+
+**Goal**: Produce analytics-ready datasets for downstream consumers.
+
+- Read from Silver Parquet tables
+- Perform aggregations and business logic
+- Write optimized Gold tables (e.g. counts, time-based metrics)
+
+**Example use cases:**
+- Frame counts per vehicle per day
+- Sensor availability metrics
+- Quality monitoring
+
+
+
+## Phase 4 —  Dataset Versioning & Reproducibility (DVC)
 
 **Goal**: Enable reproducibility and dataset evolution.
 
@@ -141,6 +186,8 @@ python src/spark_jobs/etl_to_parquet.py
 - Commit metadata to Git
 
 - Keep large data files out of Git
+- Each Git commit references a specific dataset version via `.dvc` metadata
+
 
 ```text
 dvc init
