@@ -204,6 +204,26 @@ This enables:
 
 - Reproducible experiments
 
+
+## Production-Like Local Run (Task 1)
+
+Run the full pipeline with one command:
+
+```bash
+./scripts/run_pipeline.sh
+```
+
+What this adds:
+- Robust shell execution (`set -euo pipefail`) with fail-fast behavior.
+- Step-level logs written to `logs/pipeline_<timestamp>.log`.
+- Success criteria summary after execution:
+  - number of Bronze JSON files
+  - number of Silver parquet files
+  - number of Gold parquet files
+  - total run duration
+
+Each job now also returns non-zero exit codes on empty inputs to make failures explicit.
+
 ## Why This Project Matters
 
 This project mirrors **real AV data workflows**:
