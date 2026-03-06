@@ -5,6 +5,7 @@ LOG_DIR="logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/pipeline_$(date +%Y%m%d_%H%M%S).log"
 START_TS=$(date +%s)
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 run_step() {
   local name="$1"
@@ -14,9 +15,10 @@ run_step() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] END   ${name}" | tee -a "$LOG_FILE"
 }
 
-run_step "bronze_ingestion" "python src/ingestion/bronze_ingestion.py"
-run_step "silver_transform" "python src/spark_jobs/silver_transform.py"
-run_step "gold_aggregation" "python src/spark_jobs/gold_aggregation.py"
+run_step "bronze_ingestion" "${PYTHON_BIN} src/ingestion/bronze_ingestion.py"
+run_step "silver_transform" "${PYTHON_BIN} src/spark_jobs/silver_transform.py"
+run_step "data_quality_checks" "${PYTHON_BIN} scripts/run_data_quality_checks.py"
+run_step "gold_aggregation" "${PYTHON_BIN} src/spark_jobs/gold_aggregation.py"
 
 JSON_COUNT=$(find data/raw/uploads -type f -name '*.json' | wc -l | tr -d ' ')
 SILVER_PARQUET_COUNT=$(find data/silver/lakehouse -type f -name '*.parquet' | wc -l | tr -d ' ')

@@ -33,3 +33,7 @@ data/processed/
 *.parquet
 _SUCCESS
 
+# =====================
+# Runtime logs / reports
+# =====================
+logs/

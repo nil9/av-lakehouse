@@ -216,6 +216,13 @@ Run the full pipeline with one command:
 What this adds:
 - Robust shell execution (`set -euo pipefail`) with fail-fast behavior.
 - Step-level logs written to `logs/pipeline_<timestamp>.log`.
+- Built-in data quality gate after Silver transform:
+  - required-column checks
+  - null-ratio thresholds
+  - `event_time` validity window checks
+- Quality reports written on every run:
+  - `logs/quality_report_<timestamp>.json`
+  - `logs/quality_report_<timestamp>.md`
 - Success criteria summary after execution:
   - number of Bronze JSON files
   - number of Silver parquet files
@@ -223,6 +230,30 @@ What this adds:
   - total run duration
 
 Each job now also returns non-zero exit codes on empty inputs to make failures explicit.
+The pipeline also fails fast if data quality thresholds are violated.
+
+### Data Quality Threshold Configuration
+
+You can tune gates without code changes by exporting env vars before running:
+
+```bash
+export QUALITY_MAX_NULL_RATIO_DATE=0.0
+export QUALITY_MAX_NULL_RATIO_VEHICLE_ID=0.0
+export QUALITY_MAX_NULL_RATIO_FRAME_ID=0.0
+export QUALITY_MAX_NULL_RATIO_TIMESTAMP_MICROS=0.0
+export QUALITY_MAX_NULL_RATIO_EVENT_TIME=0.0
+export QUALITY_MAX_NULL_RATIO_HAS_LIDAR=0.0
+export QUALITY_MAX_INVALID_EVENT_TIME_RATIO=0.0
+export QUALITY_MIN_EVENT_TIME="2010-01-01 00:00:00"
+export QUALITY_MAX_EVENT_TIME="2035-01-01 00:00:00"
+./scripts/run_pipeline.sh
+```
+
+Run checks independently:
+
+```bash
+python scripts/run_data_quality_checks.py
+```
 
 ## Why This Project Matters
 
@@ -246,8 +277,6 @@ It demonstrates **practical data engineering skills** — not toy scripts.
 
 - Add Prefect/Dagster orchestration
 
-- Add basic data quality checks
-
 - Query Parquet with Spark SQL
 
 ## Notes
@@ -264,4 +293,3 @@ Built as a learning-focused AV data engineering project.
 
 
 ---
-
