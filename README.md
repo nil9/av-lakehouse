@@ -60,6 +60,44 @@ GitHub Actions now runs a basic CI pipeline on push/PR:
 
 CI dependencies are pinned in `requirements-ci.txt`.
 
+## Docker Basics
+
+The project is containerized for local reproducible runs.
+
+- `Dockerfile`: builds a runtime image with Python 3.10 + Java 17 + Spark/Python deps
+- `docker-compose.yml` (optional): one-command local run with mounted `data/` and `logs/`
+
+Build image:
+
+```bash
+docker build -t av-lakehouse:local .
+```
+
+Run full pipeline in a container:
+
+```bash
+docker run --rm \
+  -v "$(pwd)/data:/app/data" \
+  -v "$(pwd)/logs:/app/logs" \
+  av-lakehouse:local
+```
+
+Run only data-quality checks in a container:
+
+```bash
+docker run --rm \
+  -v "$(pwd)/data:/app/data" \
+  -v "$(pwd)/logs:/app/logs" \
+  av-lakehouse:local \
+  bash -lc "python3 scripts/run_data_quality_checks.py"
+```
+
+Optional compose run:
+
+```bash
+docker compose up --build
+```
+
 ## Project Structure
 
 ```text
@@ -103,6 +141,10 @@ av-sensor-ingestion-engine/
 ├── .gitignore
 ├── .dvcignore
 ├── requirements-ci.txt
+├── requirements-docker.txt
+├── Dockerfile
+├── .dockerignore
+├── docker-compose.yml
 ├── .github/workflows/ci.yml
 └── README.md
 

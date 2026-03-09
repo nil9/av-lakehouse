@@ -1,0 +1,16 @@
+services:
+  av-lakehouse:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: av-lakehouse:local
+    working_dir: /app
+    environment:
+      PYTHON_BIN: python3
+      SPARK_LOCAL_IP: 127.0.0.1
+      QUALITY_OUTPUT_DIR: logs
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: ["bash", "-lc", "./scripts/run_pipeline.sh"]
+
