@@ -98,6 +98,29 @@ Optional compose run:
 docker compose up --build
 ```
 
+## Observability Artifacts
+
+The pipeline now emits operational artifacts for debugging and monitoring:
+
+- Structured logs (JSONL): `logs/pipeline_events_<timestamp>.jsonl`
+- SLA metric (JSON): `logs/pipeline_sla_<timestamp>.json`
+- Step logs: `logs/pipeline_<timestamp>.log`
+- Data quality reports (JSON/Markdown): `logs/quality_report_<timestamp>.json` and `.md`
+
+Default SLA threshold:
+
+- `SLA_MAX_DURATION_SECONDS=900` (15 minutes)
+
+Set a custom SLA threshold for local runs:
+
+```bash
+SLA_MAX_DURATION_SECONDS=1200 ./scripts/run_pipeline.sh
+```
+
+Incident response guide:
+
+- [`docs/incident_runbook.md`](docs/incident_runbook.md)
+
 ## Project Structure
 
 ```text
@@ -145,6 +168,7 @@ av-sensor-ingestion-engine/
 ├── Dockerfile
 ├── .dockerignore
 ├── docker-compose.yml
+├── docs/incident_runbook.md
 ├── .github/workflows/ci.yml
 └── README.md
 
@@ -270,6 +294,8 @@ Run the full pipeline with one command:
 What this adds:
 - Robust shell execution (`set -euo pipefail`) with fail-fast behavior.
 - Step-level logs written to `logs/pipeline_<timestamp>.log`.
+- Structured JSON logs written to `logs/pipeline_events_<timestamp>.jsonl`.
+- SLA metric written to `logs/pipeline_sla_<timestamp>.json`.
 - Built-in data quality gate after Silver transform:
   - required-column checks
   - null-ratio thresholds
