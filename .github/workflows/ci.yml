@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - "feature/**"
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install CI dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci.txt
+
+      - name: Ruff lint
+        run: ruff check src scripts tests
+
+  tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install CI dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci.txt
+
+      - name: Run tests
+        env:
+          SPARK_LOCAL_IP: 127.0.0.1
+        run: python -m pytest -q tests/test_data_quality.py
+
+  sample-run:
+    name: Sample Quality Run
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install CI dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci.txt
+
+      - name: Build sample Silver dataset
+        env:
+          SPARK_LOCAL_IP: 127.0.0.1
+        run: |
+          python - <<'PY'
+          from datetime import datetime
+          from pyspark.sql import SparkSession
+
+          spark = SparkSession.builder.master("local[2]").appName("ci-sample-run").getOrCreate()
+          rows = [
+              {
+                  "date": "2026-02-01",
+                  "vehicle_id": "sim-001",
+                  "frame_id": "frame_000001",
+                  "timestamp_micros": 1760000000000000,
+                  "event_time": datetime(2026, 2, 1, 12, 0, 0),
+                  "has_lidar": True,
+              }
+          ]
+          spark.createDataFrame(rows).write.mode("overwrite").parquet("tmp/ci-silver")
+          spark.stop()
+          PY
+
+      - name: Run sample data quality check
+        env:
+          SPARK_LOCAL_IP: 127.0.0.1
+          QUALITY_SILVER_PATH: tmp/ci-silver
+          QUALITY_OUTPUT_DIR: tmp/ci-reports
+        run: python scripts/run_data_quality_checks.py
+
+      - name: Verify report artifacts
+        run: |
+          ls -la tmp/ci-reports
+          test -n "$(ls -1 tmp/ci-reports/quality_report_*.json | head -n 1)"
+          test -n "$(ls -1 tmp/ci-reports/quality_report_*.md | head -n 1)"
+

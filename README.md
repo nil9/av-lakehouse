@@ -1,4 +1,5 @@
 # AV-Lakehouse: Scalable Sensor Data Indexing & Versioning
+[![CI](https://github.com/nil9/av-lakehouse/actions/workflows/ci.yml/badge.svg)](https://github.com/nil9/av-lakehouse/actions/workflows/ci.yml)
 
 ## Overview
 **AV-Lakehouse** is a hands-on project that simulates an autonomous vehicle (AV) sensor data pipeline — from raw ingestion to analytics-ready storage with version control.
@@ -49,6 +50,16 @@ Dataset Versioning (DVC)
 | Versioning | DVC |
 | Environment | Python virtualenv |
 
+## CI Basics
+
+GitHub Actions now runs a basic CI pipeline on push/PR:
+
+- `lint`: `ruff check src scripts tests`
+- `tests`: `pytest tests/test_data_quality.py` (Spark-enabled)
+- `sample-run`: builds a tiny Silver dataset and runs `scripts/run_data_quality_checks.py`
+
+CI dependencies are pinned in `requirements-ci.txt`.
+
 ## Project Structure
 
 ```text
@@ -91,7 +102,8 @@ av-sensor-ingestion-engine/
 │
 ├── .gitignore
 ├── .dvcignore
-├── requirements.txt
+├── requirements-ci.txt
+├── .github/workflows/ci.yml
 └── README.md
 
 ```

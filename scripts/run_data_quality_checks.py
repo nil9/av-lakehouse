@@ -9,8 +9,6 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.quality.data_quality import QualityConfig, run_data_quality_checks
-
 
 def _env_float(name: str, default: float) -> float:
     raw = os.getenv(name)
@@ -20,6 +18,8 @@ def _env_float(name: str, default: float) -> float:
 
 
 def main() -> int:
+    from src.quality.data_quality import QualityConfig, run_data_quality_checks
+
     config = QualityConfig(
         silver_path=os.getenv("QUALITY_SILVER_PATH", "data/silver/lakehouse"),
         output_dir=os.getenv("QUALITY_OUTPUT_DIR", "logs"),

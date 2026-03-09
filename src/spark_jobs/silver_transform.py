@@ -23,7 +23,7 @@ def main() -> int:
 
     df_clean = (
         df.withColumn("event_time", to_timestamp(col("timestamp_micros") / 1e6))
-        .withColumn("quality_flag", (col("has_lidar") == True).cast("string"))
+        .withColumn("quality_flag", col("has_lidar").cast("string"))
     )
 
     (
