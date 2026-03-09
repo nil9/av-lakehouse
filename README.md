@@ -1,5 +1,5 @@
 # AV-Lakehouse: Scalable Sensor Data Indexing & Versioning
-[![CI](https://github.com/nil9/av-lakehouse/actions/workflows/ci.yml/badge.svg)](https://github.com/nil9/av-lakehouse/actions/workflows/ci.yml)
+[![CI](https://github.com/nil9/av-lakehouse/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/nil9/av-lakehouse/actions/workflows/ci.yml)
 
 ## Overview
 **AV-Lakehouse** is a hands-on project that simulates an autonomous vehicle (AV) sensor data pipeline — from raw ingestion to analytics-ready storage with version control.
