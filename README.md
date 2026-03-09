@@ -1,320 +1,133 @@
-# AV-Lakehouse: Scalable Sensor Data Indexing & Versioning
+# AV-Lakehouse: Consulting-Focused Data Platform Blueprint
 [![CI](https://github.com/nil9/av-lakehouse/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/nil9/av-lakehouse/actions/workflows/ci.yml)
 
-## Overview
-**AV-Lakehouse** is a hands-on project that simulates an autonomous vehicle (AV) sensor data pipeline — from raw ingestion to analytics-ready storage with version control.
+## Executive Summary
 
-The goal is to demonstrate real-world AV data engineering patterns:
+AV-Lakehouse is a practical blueprint for running autonomous vehicle (AV) sensor data ingestion and analytics as an operating service, not just a script.
 
-- Handling raw sensor data (images + metadata)
-- Converting semi-structured data into optimized Parquet tables
-- Partitioning for fast querying
-- Tracking dataset versions reproducibly using DVC
+It demonstrates how to move from raw sensor frames to trusted analytics outputs with:
 
-This project intentionally uses small sample data (not multi-TB datasets) to keep the workflow lightweight while still realistic.
+- repeatable ETL layers (Bronze, Silver, Gold)
+- quality gates and fail-fast behavior
+- operational observability artifacts
+- CI and containerized execution
+- dataset versioning with DVC
 
----
+This repository is intentionally lightweight (tutorial-scale data) so teams can validate patterns before scaling to production-grade data volume.
+
+## Business Outcomes
+
+This implementation is framed around outcomes a delivery team can present to engineering leadership:
+
+- Faster analytics onboarding:
+  - Raw and transformed datasets are clearly separated and query-ready.
+- Lower data incident risk:
+  - Data quality checks enforce required fields, null thresholds, and timestamp validity.
+- Higher operational confidence:
+  - Structured logs, SLA artifacts, and runbooks support incident triage.
+- Better delivery velocity:
+  - CI gates enforce lint/test/sample checks on every change.
+- Reproducible data releases:
+  - DVC enables deterministic roll-forward and rollback.
+
+## Operating Model
+
+The repo supports a simple DataOps operating model suitable for a small platform team.
+
+### Roles and responsibilities
+
+- Data Engineer:
+  - owns ingestion and transformations (`src/ingestion`, `src/spark_jobs`)
+- Analytics Engineer:
+  - consumes Gold outputs and defines downstream metrics
+- Platform/DevOps:
+  - maintains CI, container runtime, and environment consistency
+- On-call Engineer:
+  - triages incidents with logs, SLA JSON, and runbook guidance
+
+### Run cadence
+
+- CI on push/PR for code quality and behavioral checks
+- Local/containerized pipeline runs for development validation
+- Dataset version checkpointing after significant schema or logic changes
+
+### Control points
+
+- Quality gate after Silver transformation
+- Pipeline-level success criteria and SLA output
+- Structured event trail for step-level accountability
 
 ## Architecture
 
 ```text
-
-Raw Lake (Bronze)
-- Images + raw JSON metadata
-|
-v
-Spark ETL (Bronze → Silver)
-|
-v
-Cleaned & Partitioned Parquet (Silver)
-|
-v
-Aggregations / Analytics Tables (Gold)
-|
-v
-Dataset Versioning (DVC)
-
-
+Bronze (raw uploads: images + JSON metadata)
+  -> Silver (cleaned, normalized, partitioned Parquet)
+  -> Gold (aggregated analytics tables)
+  -> DVC versioning (dataset lineage and reproducibility)
 ```
----
 
+## Core Capabilities Delivered
+
+### 1) Data Pipeline
+
+- Bronze ingestion from Waymo tutorial frames
+- Silver normalization with Spark
+- Gold aggregations for analytics use cases
+
+### 2) Data Quality Controls
+
+- Required column checks
+- Null-ratio thresholds
+- Event timestamp validity windows
+- Hard pipeline failure when thresholds are violated
+
+### 3) Observability Artifacts
+
+For each run, the pipeline emits:
+
+- Step log: `logs/pipeline_<timestamp>.log`
+- Structured events: `logs/pipeline_events_<timestamp>.jsonl`
+- SLA metric: `logs/pipeline_sla_<timestamp>.json`
+- Quality reports: `logs/quality_report_<timestamp>.json` and `.md`
+
+Incident guide:
+
+- [`docs/incident_runbook.md`](docs/incident_runbook.md)
+
+### 4) CI/CD Basics
+
+GitHub Actions pipeline stages:
+
+- `lint`: `ruff check src scripts tests`
+- `tests`: `pytest tests/test_data_quality.py`
+- `sample-run`: builds sample Silver data and executes quality check
+
+### 5) Containerized Runtime
+
+- `Dockerfile` for reproducible local runtime
+- `docker-compose.yml` for one-command orchestration
 
 ## Tech Stack
 
 | Layer | Technology |
 |------|------------|
 | Language | Python 3.10 |
-| Data Processing | PySpark |
-| Storage Format | Apache Parquet |
-| Raw Dataset | Waymo Open Dataset (tutorial frames) |
+| Processing | PySpark |
+| Storage | Apache Parquet |
+| Source Data | Waymo tutorial frames |
 | Versioning | DVC |
-| Environment | Python virtualenv |
+| CI | GitHub Actions |
+| Container Runtime | Docker / Docker Compose |
 
-## CI Basics
+## How To Run
 
-GitHub Actions now runs a basic CI pipeline on push/PR:
-
-- `lint`: `ruff check src scripts tests`
-- `tests`: `pytest tests/test_data_quality.py` (Spark-enabled)
-- `sample-run`: builds a tiny Silver dataset and runs `scripts/run_data_quality_checks.py`
-
-CI dependencies are pinned in `requirements-ci.txt`.
-
-## Docker Basics
-
-The project is containerized for local reproducible runs.
-
-- `Dockerfile`: builds a runtime image with Python 3.10 + Java 17 + Spark/Python deps
-- `docker-compose.yml` (optional): one-command local run with mounted `data/` and `logs/`
-
-Build image:
-
-```bash
-docker build -t av-lakehouse:local .
-```
-
-Run full pipeline in a container:
-
-```bash
-docker run --rm \
-  -v "$(pwd)/data:/app/data" \
-  -v "$(pwd)/logs:/app/logs" \
-  av-lakehouse:local
-```
-
-Run only data-quality checks in a container:
-
-```bash
-docker run --rm \
-  -v "$(pwd)/data:/app/data" \
-  -v "$(pwd)/logs:/app/logs" \
-  av-lakehouse:local \
-  bash -lc "python3 scripts/run_data_quality_checks.py"
-```
-
-Optional compose run:
-
-```bash
-docker compose up --build
-```
-
-## Observability Artifacts
-
-The pipeline now emits operational artifacts for debugging and monitoring:
-
-- Structured logs (JSONL): `logs/pipeline_events_<timestamp>.jsonl`
-- SLA metric (JSON): `logs/pipeline_sla_<timestamp>.json`
-- Step logs: `logs/pipeline_<timestamp>.log`
-- Data quality reports (JSON/Markdown): `logs/quality_report_<timestamp>.json` and `.md`
-
-Default SLA threshold:
-
-- `SLA_MAX_DURATION_SECONDS=900` (15 minutes)
-
-Set a custom SLA threshold for local runs:
-
-```bash
-SLA_MAX_DURATION_SECONDS=1200 ./scripts/run_pipeline.sh
-```
-
-Incident response guide:
-
-- [`docs/incident_runbook.md`](docs/incident_runbook.md)
-
-## Project Structure
-
-```text
-av-sensor-ingestion-engine/
-│
-├── src/
-│   ├── ingestion/
-│   │   └── bronze_ingestion.py          # TFRecords → Bronze (images + JSON)
-│   │
-│   └── spark_jobs/
-│       ├── silver_transform.py          # Bronze → Silver Parquet
-│       └── gold_aggregation.py          # Silver → Gold aggregates
-│
-├── data/
-│   ├── bronze/
-│   │   └── vehicle_id=sim-001/
-│   │       └── date=2026-02-01/
-│   │           ├── frame_000000_front.jpg
-│   │           ├── frame_000000.json
-│   │           └── ...
-│   │
-│   ├── silver/
-│   │   └── date=2026-02-01/
-│   │       └── vehicle_id=sim-001/
-│   │           ├── part-*.snappy.parquet
-│   │           └── _SUCCESS
-│   │
-│   └── gold/
-│       └── date=2026-02-01/
-│           └── vehicle_id=sim-001/
-│               ├── part-*.snappy.parquet
-│               └── _SUCCESS
-│
-├── scripts/
-│   └── inspect_frame.py
-│
-├── .dvc/
-├── data/silver.dvc                      # DVC tracks Silver (core dataset)
-├── data/gold.dvc                        # optional but good
-│
-├── .gitignore
-├── .dvcignore
-├── requirements-ci.txt
-├── requirements-docker.txt
-├── Dockerfile
-├── .dockerignore
-├── docker-compose.yml
-├── docs/incident_runbook.md
-├── .github/workflows/ci.yml
-└── README.md
-
-```
-## Phase 1 — Bronze Layer: Raw Ingestion
-
-**Goal**: Simulate a vehicle uploading raw sensor data.
-
-- Reads Waymo tutorial TFRecord frames
-
-- Extracts front camera images
-
-- Writes:
-
-  - JPG images
-
-  - JSON metadata (timestamps, pose, vehicle_id, frame_id)
-
-Example output:
-```text
-data/raw/uploads/
-└── vehicle_id=sim-001/
-    └── date=2026-02-01/
-        ├── frame_000000_front.jpg
-        ├── frame_000001_front.jpg
-        └── frame_000000.json
-```
-Run:
-
-```text
-
-python src/ingestion/bronze_ingestion.py
-
-```
-
-## Phase 2 — Silver Layer: Spark ETL & Normalization
-**Goal**: Convert messy JSON metadata into analytics-ready Parquet.
-
-This layer applies schema enforcement, normalization, and partitioning to make data query- and analytics-ready.
-
-
-**Transformations**:
-
-- Convert timestamps from microseconds → seconds
-
-- Normalize fields
-
-- Add simple quality flags
-
-- Preserve pose and LiDAR metadata
-
-- Partition output by **date** and **vehicle_id**
-
-Output:
-
-```text
-
-data/silver/
-└── date=2026-02-01/
-    └── vehicle_id=sim-001/
-        ├── part-*.snappy.parquet
-        └── _SUCCESS
-
-```
-Run:
-
-```text
-
-python src/spark_jobs/silver_transform.py
-
-```
-## Phase 3 — Gold Layer: Aggregations & Analytics
-
-**Goal**: Produce analytics-ready datasets for downstream consumers.
-
-- Read from Silver Parquet tables
-- Perform aggregations and business logic
-- Write optimized Gold tables (e.g. counts, time-based metrics)
-
-**Example use cases:**
-- Frame counts per vehicle per day
-- Sensor availability metrics
-- Quality monitoring
-
-
-
-## Phase 4 —  Dataset Versioning & Reproducibility (DVC)
-
-**Goal**: Enable reproducibility and dataset evolution.
-
-- Track Parquet lakehouse using DVC
-
-- Commit metadata to Git
-
-- Keep large data files out of Git
-- Each Git commit references a specific dataset version via `.dvc` metadata
-
-
-```text
-dvc init
-dvc add data/processed/lakehouse
-git add data/processed/lakehouse.dvc data/processed/.gitignore
-git commit -m "Track processed lakehouse with DVC"
-```
-
-This enables:
-
-- Dataset versioning (v1.0, v1.1, …)
-
-- Rollbacks
-
-- Reproducible experiments
-
-
-## Production-Like Local Run (Task 1)
-
-Run the full pipeline with one command:
+### Local pipeline
 
 ```bash
 ./scripts/run_pipeline.sh
 ```
 
-What this adds:
-- Robust shell execution (`set -euo pipefail`) with fail-fast behavior.
-- Step-level logs written to `logs/pipeline_<timestamp>.log`.
-- Structured JSON logs written to `logs/pipeline_events_<timestamp>.jsonl`.
-- SLA metric written to `logs/pipeline_sla_<timestamp>.json`.
-- Built-in data quality gate after Silver transform:
-  - required-column checks
-  - null-ratio thresholds
-  - `event_time` validity window checks
-- Quality reports written on every run:
-  - `logs/quality_report_<timestamp>.json`
-  - `logs/quality_report_<timestamp>.md`
-- Success criteria summary after execution:
-  - number of Bronze JSON files
-  - number of Silver parquet files
-  - number of Gold parquet files
-  - total run duration
-
-Each job now also returns non-zero exit codes on empty inputs to make failures explicit.
-The pipeline also fails fast if data quality thresholds are violated.
-
-### Data Quality Threshold Configuration
-
-You can tune gates without code changes by exporting env vars before running:
+Useful runtime config:
 
 ```bash
 export QUALITY_MAX_NULL_RATIO_DATE=0.0
@@ -326,50 +139,104 @@ export QUALITY_MAX_NULL_RATIO_HAS_LIDAR=0.0
 export QUALITY_MAX_INVALID_EVENT_TIME_RATIO=0.0
 export QUALITY_MIN_EVENT_TIME="2010-01-01 00:00:00"
 export QUALITY_MAX_EVENT_TIME="2035-01-01 00:00:00"
+export SLA_MAX_DURATION_SECONDS=900
 ./scripts/run_pipeline.sh
 ```
 
-Run checks independently:
+Run quality checks independently:
 
 ```bash
-python scripts/run_data_quality_checks.py
+python3 scripts/run_data_quality_checks.py
 ```
 
-## Why This Project Matters
+### Docker run
 
-This project mirrors **real AV data workflows**:
+Build:
 
-- Sensor ingestion
+```bash
+docker build -t av-lakehouse:local .
+```
 
-- Scalable storage formats
+Run full pipeline:
 
-- Spark-based ETL
+```bash
+docker run --rm \
+  -v "$(pwd)/data:/app/data" \
+  -v "$(pwd)/logs:/app/logs" \
+  av-lakehouse:local
+```
 
-- Dataset traceability
+Run quality checks only:
 
-It demonstrates **practical data engineering skills** — not toy scripts.
+```bash
+docker run --rm \
+  -v "$(pwd)/data:/app/data" \
+  -v "$(pwd)/logs:/app/logs" \
+  av-lakehouse:local \
+  bash -lc "python3 scripts/run_data_quality_checks.py"
+```
 
-## Next Steps (Optional Extensions)
+Optional compose:
 
-- Add object labels and create Dataset v1.1
+```bash
+docker compose up --build
+```
 
-- Integrate MinIO (local S3)
+## Project Structure (Key Paths)
 
-- Add Prefect/Dagster orchestration
+```text
+src/ingestion/bronze_ingestion.py
+src/spark_jobs/silver_transform.py
+src/spark_jobs/gold_aggregation.py
+src/quality/data_quality.py
+scripts/run_pipeline.sh
+scripts/run_data_quality_checks.py
+docs/incident_runbook.md
+.github/workflows/ci.yml
+Dockerfile
+docker-compose.yml
+```
 
-- Query Parquet with Spark SQL
+## Trade-offs and Current Constraints
 
-## Notes
+Current design decisions are intentional for speed and clarity:
 
-- GPU is not required
+- Local-first execution:
+  - No external orchestration service yet (Prefect/Airflow not included).
+- Tutorial-scale dataset:
+  - Validates patterns, but not a throughput benchmark.
+- Batch-oriented processing:
+  - No streaming ingestion path in current scope.
+- Simple SLA model:
+  - Single completion SLI/SLO; no per-step latency budgets yet.
+- Lightweight governance:
+  - Quality rules are code-driven and configurable, but not connected to a centralized data catalog.
 
-- TensorFlow GPU warnings can be safely ignored
+## Roadmap
 
-- Designed to run on a laptop or VM
+### Near term (0-30 days)
 
-## Author
+- Add per-step duration metrics and trend snapshots
+- Add schema evolution tests for backward compatibility
+- Add Makefile targets for common local/dev workflows
 
-Built as a learning-focused AV data engineering project.
+### Mid term (30-90 days)
 
+- Add orchestration layer (Prefect or Dagster)
+- Add object-level labels and enriched Gold datasets
+- Add remote artifact storage (MinIO/S3) for DVC and logs
 
----
+### Longer term (90+ days)
+
+- Introduce streaming ingestion path
+- Add cost/performance benchmarking at larger data scales
+- Add policy-driven data contracts and catalog integration
+
+## Why This Matters In Consulting Context
+
+This repo can be used as:
+
+- a discovery accelerator for data platform engagements
+- a reference implementation for DataOps operating model discussions
+- a practical artifact to communicate trade-offs between delivery speed and production hardening
+
