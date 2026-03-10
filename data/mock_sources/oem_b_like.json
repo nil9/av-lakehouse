@@ -1,0 +1,36 @@
+[
+  {
+    "vehicle": "oem-b-77",
+    "capture_date": "2026-02-01",
+    "frame": {
+      "id": "oemb_900001",
+      "captured_at_us": 1760000002000000
+    },
+    "sensors": {
+      "camera": "front",
+      "lidar": {
+        "available": "yes"
+      }
+    },
+    "assets": {
+      "front_image": "data/raw/oem_b/oem-b-77/2026-02-01/oemb_900001.jpg"
+    }
+  },
+  {
+    "vehicle": "oem-b-77",
+    "capture_date": "2026-02-01",
+    "frame": {
+      "id": "oemb_900002",
+      "captured_at_us": 1760000003000000
+    },
+    "sensors": {
+      "camera": "front",
+      "lidar": {
+        "available": "no"
+      }
+    },
+    "assets": {
+      "front_image": "data/raw/oem_b/oem-b-77/2026-02-01/oemb_900002.jpg"
+    }
+  }
+]

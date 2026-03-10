@@ -1,3 +1,7 @@
+import pytest
+
+pytest.importorskip("pyspark")
+
 from pathlib import Path
 from datetime import datetime
 
