@@ -1,18 +1,18 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, to_timestamp
 
-RAW_PATH = "data/raw/uploads"
-OUT_PATH = "data/silver/lakehouse"
+from src.spark_jobs.path_config import load_storage_path_config
 
 
 def main() -> int:
     spark = SparkSession.builder.appName("WaymoRawToParquet").getOrCreate()
+    path_config = load_storage_path_config()
 
     df = (
         spark.read.option("recursiveFileLookup", "true")
         .option("pathGlobFilter", "*.json")
         .option("multiLine", "true")
-        .json(RAW_PATH)
+        .json(path_config.raw_input_path)
     )
 
     source_count = df.count()
@@ -29,13 +29,13 @@ def main() -> int:
     (
         df_clean.write.mode("overwrite")
         .partitionBy("date", "vehicle_id")
-        .parquet(OUT_PATH)
+        .parquet(path_config.silver_output_path)
     )
 
-    output_count = spark.read.parquet(OUT_PATH).count()
+    output_count = spark.read.parquet(path_config.silver_output_path).count()
     print(
         "[SILVER] Transformation complete "
-        f"(input_rows={source_count}, output_rows={output_count}, output_path='{OUT_PATH}')"
+        f"(input_rows={source_count}, output_rows={output_count}, output_path='{path_config.silver_output_path}', raw_input_path='{path_config.raw_input_path}')"
     )
 
     spark.stop()

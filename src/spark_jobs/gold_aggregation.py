@@ -1,14 +1,14 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import avg, col, count
 
-SILVER_PATH = "data/silver/lakehouse"
-GOLD_PATH = "data/gold/vehicle_daily_summary"
+from src.spark_jobs.path_config import load_storage_path_config
 
 
 def main() -> int:
     spark = SparkSession.builder.appName("GoldAggregation").getOrCreate()
+    path_config = load_storage_path_config()
 
-    df = spark.read.parquet(SILVER_PATH)
+    df = spark.read.parquet(path_config.silver_output_path)
     source_count = df.count()
 
     if source_count == 0:
@@ -21,12 +21,12 @@ def main() -> int:
         avg(col("has_lidar").cast("int")).alias("lidar_coverage_ratio"),
     )
 
-    df_gold.write.mode("overwrite").parquet(GOLD_PATH)
+    df_gold.write.mode("overwrite").parquet(path_config.gold_output_path)
 
-    summary_count = spark.read.parquet(GOLD_PATH).count()
+    summary_count = spark.read.parquet(path_config.gold_output_path).count()
     print(
         "[GOLD] Aggregation complete "
-        f"(input_rows={source_count}, summary_rows={summary_count}, output_path='{GOLD_PATH}')"
+        f"(input_rows={source_count}, summary_rows={summary_count}, output_path='{path_config.gold_output_path}', silver_input_path='{path_config.silver_output_path}')"
     )
 
     spark.stop()

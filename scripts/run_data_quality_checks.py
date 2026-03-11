@@ -21,7 +21,9 @@ def main() -> int:
     from src.quality.data_quality import QualityConfig, run_data_quality_checks
 
     config = QualityConfig(
-        silver_path=os.getenv("QUALITY_SILVER_PATH", "data/silver/lakehouse"),
+        silver_path=os.getenv(
+            "QUALITY_SILVER_PATH", os.getenv("SILVER_OUTPUT_PATH", "data/silver/lakehouse")
+        ),
         output_dir=os.getenv("QUALITY_OUTPUT_DIR", "logs"),
         min_valid_event_time=os.getenv(
             "QUALITY_MIN_EVENT_TIME", "2010-01-01 00:00:00"
