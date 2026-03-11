@@ -10,6 +10,8 @@ from pyspark.sql.functions import col, lit, sum, when
 
 @dataclass(frozen=True)
 class QualityConfig:
+    """Thresholds and filesystem locations used by quality validation."""
+
     silver_path: str = "data/silver/lakehouse"
     output_dir: str = "logs"
     min_valid_event_time: str = "2010-01-01 00:00:00"
@@ -34,14 +36,20 @@ REQUIRED_COLUMNS = (
 
 
 def _utc_now() -> str:
+    """Return the current UTC timestamp in ISO-8601 format."""
+
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _run_id() -> str:
+    """Create a compact UTC suffix used for report file names."""
+
     return datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
 
 def _null_ratio(df: DataFrame, column_name: str, row_count: int) -> float:
+    """Compute the null ratio for a column in a Spark DataFrame."""
+
     if row_count == 0:
         return 1.0
 
@@ -53,6 +61,8 @@ def _null_ratio(df: DataFrame, column_name: str, row_count: int) -> float:
 
 
 def _evaluate_checks(df: DataFrame, config: QualityConfig) -> tuple[bool, dict[str, Any]]:
+    """Run all data-quality checks and build the structured report payload."""
+
     row_count = df.count()
     columns = set(df.columns)
     missing_columns = sorted(set(REQUIRED_COLUMNS) - columns)
@@ -131,6 +141,8 @@ def _evaluate_checks(df: DataFrame, config: QualityConfig) -> tuple[bool, dict[s
 
 
 def _report_to_markdown(report: dict[str, Any]) -> str:
+    """Render the JSON-style quality report dictionary into markdown."""
+
     lines = [
         "# Data Quality Report",
         "",
@@ -181,6 +193,8 @@ def _report_to_markdown(report: dict[str, Any]) -> str:
 def run_data_quality_checks(
     spark: SparkSession, config: QualityConfig | None = None
 ) -> tuple[bool, dict[str, Any], Path, Path]:
+    """Load silver data, evaluate checks, and persist JSON/Markdown reports."""
+
     config = config or QualityConfig()
     report_dir = Path(config.output_dir)
     report_dir.mkdir(parents=True, exist_ok=True)
