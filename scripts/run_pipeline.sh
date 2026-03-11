@@ -171,10 +171,10 @@ emit_event "info" "pipeline_started" "Pipeline execution started." "" "started"
 echo "[PIPELINE] Run ID: ${RUN_ID}" | tee -a "$LOG_FILE"
 echo "[PIPELINE] Structured logs: ${STRUCTURED_LOG_FILE}" | tee -a "$LOG_FILE"
 
-run_step "bronze_ingestion" "${PYTHON_BIN} src/ingestion/bronze_ingestion.py"
-run_step "silver_transform" "${PYTHON_BIN} src/spark_jobs/silver_transform.py"
+run_step "bronze_ingestion" "${PYTHON_BIN} -m src.ingestion.bronze_ingestion"
+run_step "silver_transform" "${PYTHON_BIN} -m src.spark_jobs.silver_transform"
 run_step "data_quality_checks" "${PYTHON_BIN} scripts/run_data_quality_checks.py"
-run_step "gold_aggregation" "${PYTHON_BIN} src/spark_jobs/gold_aggregation.py"
+run_step "gold_aggregation" "${PYTHON_BIN} -m src.spark_jobs.gold_aggregation"
 
 JSON_COUNT="$(count_files "$RAW_INPUT_PATH" '*.json')"
 SILVER_PARQUET_COUNT="$(count_files "$SILVER_OUTPUT_PATH" '*.parquet')"
