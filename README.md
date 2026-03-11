@@ -90,6 +90,7 @@ See deployment examples: [`docs/cloud_deployment_path.md`](docs/cloud_deployment
 - Canonical schema harmonization for Waymo-like and OEM-B-like source payloads
 - Silver normalization with Spark
 - Gold aggregations for analytics use cases
+- Gold+ AI-compatible export table for LLM/RAG ingestion pipelines
 
 ### 2) Data Quality Controls
 
@@ -118,6 +119,24 @@ GitHub Actions pipeline stages:
 - `lint`: `ruff check src scripts tests`
 - `tests`: `pytest tests/test_path_config.py tests/test_schema_harmonization.py tests/test_data_quality.py`
 - `sample-run`: builds sample Silver data and executes quality check
+
+
+### Gold+ AI-compatible export
+
+The Gold aggregation job now also writes a Gold+ table optimized for LLM pipelines.
+
+Output path:
+
+- `GOLD_AI_OUTPUT_PATH` (default: `data/gold_plus/ai_compatible_export`)
+
+Columns include:
+
+- `chunk_id`, `document_id` for chunk/document traceability
+- `normalized_text` for embedding/prompt ingestion
+- structured metadata payload (`metadata_json`) for retrieval/filter pipelines
+- temporal fields (`event_time_utc`, `event_timestamp`, `exported_at_utc`, `date`)
+- metadata (`vehicle_id`, `frame_id`, `camera_name`, `has_lidar`, `source_manufacturer`)
+- source lineage (`source_image_path`, `source_table_path`)
 
 ### 5) Containerized Runtime
 
@@ -165,6 +184,7 @@ Cloud-compatible runtime config (minimal):
 export RAW_INPUT_PATH="data/raw/uploads"
 export SILVER_OUTPUT_PATH="s3a://my-av-lakehouse/silver/lakehouse"  # or abfss://...
 export GOLD_OUTPUT_PATH="s3a://my-av-lakehouse/gold/vehicle_daily_summary"
+export GOLD_AI_OUTPUT_PATH="s3a://my-av-lakehouse/gold_plus/ai_compatible_export"
 export QUALITY_SILVER_PATH="$SILVER_OUTPUT_PATH"
 ./scripts/run_pipeline.sh
 ```
@@ -217,7 +237,7 @@ src/ingestion/bronze_ingestion.py
 src/harmonization/canonical_schema.py
 src/spark_jobs/path_config.py
 src/spark_jobs/silver_transform.py
-src/spark_jobs/gold_aggregation.py
+src/spark_jobs/gold_aggregation.py  # writes Gold summary + Gold+ AI-compatible export
 src/quality/data_quality.py
 scripts/run_pipeline.sh
 scripts/run_data_quality_checks.py
@@ -258,6 +278,8 @@ A dedicated harmonization module maps distinct mock manufacturer payloads into o
 - Add per-step duration metrics and trend snapshots
 - Add schema evolution tests for backward compatibility
 - Add Makefile targets for common local/dev workflows
+- Add synthetic augmentation tracks for LLM training corpora (paraphrase generation with semantic-equivalence validation)
+- Add format normalization strategy for AI exports (controlled vocabulary mapping, unit normalization, and prompt-ready metadata templates)
 
 ### Mid term (30-90 days)
 

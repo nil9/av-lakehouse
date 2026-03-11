@@ -15,6 +15,7 @@ def test_load_storage_path_config_from_environment(monkeypatch) -> None:
     monkeypatch.setenv("RAW_INPUT_PATH", "s3a://bucket/raw")
     monkeypatch.setenv("SILVER_OUTPUT_PATH", "s3a://bucket/silver")
     monkeypatch.setenv("GOLD_OUTPUT_PATH", "abfss://gold@account.dfs.core.windows.net/path")
+    monkeypatch.setenv("GOLD_AI_OUTPUT_PATH", "s3a://bucket/gold-plus/ai-export")
 
     config = load_storage_path_config()
 
@@ -24,3 +25,4 @@ def test_load_storage_path_config_from_environment(monkeypatch) -> None:
         config.gold_output_path
         == "abfss://gold@account.dfs.core.windows.net/path"
     )
+    assert config.gold_ai_output_path == "s3a://bucket/gold-plus/ai-export"
