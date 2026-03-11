@@ -1,15 +1,18 @@
 import pytest
-from pyspark.sql import SparkSession
 
 
 @pytest.fixture(scope="session")
-def spark() -> SparkSession:
+def spark():
+    pyspark_sql = pytest.importorskip(
+        "pyspark.sql",
+        reason="pyspark is required for Spark-based tests",
+    )
+    spark_session_cls = pyspark_sql.SparkSession
     session = (
-        SparkSession.builder.master("local[2]")
+        spark_session_cls.builder.master("local[2]")
         .appName("av-lakehouse-tests")
         .config("spark.ui.enabled", "false")
         .getOrCreate()
     )
     yield session
     session.stop()
-

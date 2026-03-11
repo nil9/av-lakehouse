@@ -12,6 +12,11 @@ SLA_METRIC_FILE="$LOG_DIR/pipeline_sla_${RUN_STAMP}.json"
 START_TS="$(date +%s)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 SLA_MAX_DURATION_SECONDS="${SLA_MAX_DURATION_SECONDS:-900}"
+RAW_INPUT_PATH="${RAW_INPUT_PATH:-data/raw/uploads}"
+SILVER_OUTPUT_PATH="${SILVER_OUTPUT_PATH:-data/silver/lakehouse}"
+GOLD_OUTPUT_PATH="${GOLD_OUTPUT_PATH:-data/gold/vehicle_daily_summary}"
+QUALITY_SILVER_PATH="${QUALITY_SILVER_PATH:-$SILVER_OUTPUT_PATH}"
+export RAW_INPUT_PATH SILVER_OUTPUT_PATH GOLD_OUTPUT_PATH QUALITY_SILVER_PATH
 PIPELINE_FINALIZED=0
 
 count_files() {
@@ -132,9 +137,9 @@ on_error() {
   local end_ts duration json_count silver_count gold_count
   end_ts="$(date +%s)"
   duration=$((end_ts - START_TS))
-  json_count="$(count_files data/raw/uploads '*.json')"
-  silver_count="$(count_files data/silver/lakehouse '*.parquet')"
-  gold_count="$(count_files data/gold/vehicle_daily_summary '*.parquet')"
+  json_count="$(count_files "$RAW_INPUT_PATH" '*.json')"
+  silver_count="$(count_files "$SILVER_OUTPUT_PATH" '*.parquet')"
+  gold_count="$(count_files "$GOLD_OUTPUT_PATH" '*.parquet')"
 
   emit_event "error" "pipeline_failed" "Pipeline execution failed at command: ${failed_command}" "" "failed"
   write_sla_metric "failed" "false" "$duration" "$json_count" "$silver_count" "$gold_count"
@@ -171,9 +176,9 @@ run_step "silver_transform" "${PYTHON_BIN} src/spark_jobs/silver_transform.py"
 run_step "data_quality_checks" "${PYTHON_BIN} scripts/run_data_quality_checks.py"
 run_step "gold_aggregation" "${PYTHON_BIN} src/spark_jobs/gold_aggregation.py"
 
-JSON_COUNT="$(count_files data/raw/uploads '*.json')"
-SILVER_PARQUET_COUNT="$(count_files data/silver/lakehouse '*.parquet')"
-GOLD_PARQUET_COUNT="$(count_files data/gold/vehicle_daily_summary '*.parquet')"
+JSON_COUNT="$(count_files "$RAW_INPUT_PATH" '*.json')"
+SILVER_PARQUET_COUNT="$(count_files "$SILVER_OUTPUT_PATH" '*.parquet')"
+GOLD_PARQUET_COUNT="$(count_files "$GOLD_OUTPUT_PATH" '*.parquet')"
 END_TS="$(date +%s)"
 DURATION="$((END_TS - START_TS))"
 
@@ -187,6 +192,9 @@ echo "sla_max_duration_seconds=${SLA_MAX_DURATION_SECONDS}" | tee -a "$LOG_FILE"
 echo "log_file=${LOG_FILE}" | tee -a "$LOG_FILE"
 echo "structured_log_file=${STRUCTURED_LOG_FILE}" | tee -a "$LOG_FILE"
 echo "sla_metric_file=${SLA_METRIC_FILE}" | tee -a "$LOG_FILE"
+echo "raw_input_path=${RAW_INPUT_PATH}" | tee -a "$LOG_FILE"
+echo "silver_output_path=${SILVER_OUTPUT_PATH}" | tee -a "$LOG_FILE"
+echo "gold_output_path=${GOLD_OUTPUT_PATH}" | tee -a "$LOG_FILE"
 
 SUCCESS_CRITERIA_MET="true"
 if [[ "$JSON_COUNT" -eq 0 || "$SILVER_PARQUET_COUNT" -eq 0 || "$GOLD_PARQUET_COUNT" -eq 0 ]]; then

@@ -66,11 +66,28 @@ Bronze (raw uploads: images + JSON metadata)
   -> DVC versioning (dataset lineage and reproducibility)
 ```
 
+### Cloud-Ready Storage Path Architecture (Minimal)
+
+```text
+Bronze (RAW_INPUT_PATH)
+  -> Silver transform (SILVER_OUTPUT_PATH)
+  -> Data quality checks (QUALITY_SILVER_PATH)
+  -> Gold aggregation (GOLD_OUTPUT_PATH)
+
+Path examples:
+- local: data/silver/lakehouse
+- AWS S3: s3a://<bucket>/silver/lakehouse
+- Azure ADLS: abfss://<container>@<account>.dfs.core.windows.net/lakehouse
+```
+
+See deployment examples: [`docs/cloud_deployment_path.md`](docs/cloud_deployment_path.md)
+
 ## Core Capabilities Delivered
 
 ### 1) Data Pipeline
 
 - Bronze ingestion from Waymo tutorial frames
+- Canonical schema harmonization for Waymo-like and OEM-B-like source payloads
 - Silver normalization with Spark
 - Gold aggregations for analytics use cases
 
@@ -99,7 +116,7 @@ Incident guide:
 GitHub Actions pipeline stages:
 
 - `lint`: `ruff check src scripts tests`
-- `tests`: `pytest tests/test_data_quality.py`
+- `tests`: `pytest tests/test_path_config.py tests/test_schema_harmonization.py tests/test_data_quality.py`
 - `sample-run`: builds sample Silver data and executes quality check
 
 ### 5) Containerized Runtime
@@ -142,6 +159,17 @@ export QUALITY_MAX_EVENT_TIME="2035-01-01 00:00:00"
 export SLA_MAX_DURATION_SECONDS=900
 ./scripts/run_pipeline.sh
 ```
+Cloud-compatible runtime config (minimal):
+
+```bash
+export RAW_INPUT_PATH="data/raw/uploads"
+export SILVER_OUTPUT_PATH="s3a://my-av-lakehouse/silver/lakehouse"  # or abfss://...
+export GOLD_OUTPUT_PATH="s3a://my-av-lakehouse/gold/vehicle_daily_summary"
+export QUALITY_SILVER_PATH="$SILVER_OUTPUT_PATH"
+./scripts/run_pipeline.sh
+```
+
+Azure/AWS examples: [`docs/cloud_deployment_path.md`](docs/cloud_deployment_path.md)
 
 Run quality checks independently:
 
@@ -186,6 +214,8 @@ docker compose up --build
 
 ```text
 src/ingestion/bronze_ingestion.py
+src/harmonization/canonical_schema.py
+src/spark_jobs/path_config.py
 src/spark_jobs/silver_transform.py
 src/spark_jobs/gold_aggregation.py
 src/quality/data_quality.py
@@ -211,6 +241,15 @@ Current design decisions are intentional for speed and clarity:
   - Single completion SLI/SLO; no per-step latency budgets yet.
 - Lightweight governance:
   - Quality rules are code-driven and configurable, but not connected to a centralized data catalog.
+
+### Canonical schema harmonization
+
+A dedicated harmonization module maps distinct mock manufacturer payloads into one canonical Silver contract (date, vehicle_id, frame_id, timestamp_micros, event_time, has_lidar, camera_name, image_path, source_manufacturer).
+
+- Mapping implementation: `src/harmonization/canonical_schema.py`
+- Mock source schemas: `data/mock_sources/waymo_like.json`, `data/mock_sources/oem_b_like.json`
+- Mapping documentation: `docs/schema_harmonization.md`
+- Validation tests: `tests/test_schema_harmonization.py`
 
 ## Roadmap
 

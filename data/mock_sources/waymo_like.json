@@ -1,0 +1,20 @@
+[
+  {
+    "vehicle_id": "sim-001",
+    "frame_id": "frame_000001",
+    "timestamp_micros": 1760000000000000,
+    "date": "2026-02-01",
+    "camera_name": "FRONT",
+    "image_path": "data/raw/uploads/vehicle_id=sim-001/date=2026-02-01/frame_000001_front.jpg",
+    "has_lidar": true
+  },
+  {
+    "vehicle_id": "sim-001",
+    "frame_id": "frame_000002",
+    "timestamp_micros": 1760000001000000,
+    "date": "2026-02-01",
+    "camera_name": "FRONT",
+    "image_path": "data/raw/uploads/vehicle_id=sim-001/date=2026-02-01/frame_000002_front.jpg",
+    "has_lidar": false
+  }
+]
