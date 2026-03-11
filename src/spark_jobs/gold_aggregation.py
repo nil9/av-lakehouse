@@ -18,6 +18,14 @@ from src.spark_jobs.path_config import load_storage_path_config
 
 
 def build_ai_compatible_export(df: DataFrame, source_table_path: str) -> DataFrame:
+    if "source_manufacturer" not in df.columns:
+        df = df.withColumn("source_manufacturer", lit("unknown"))
+    else:
+        df = df.withColumn(
+            "source_manufacturer",
+            lower(col("source_manufacturer")).cast("string"),
+        )
+
     return (
         df.withColumn(
             "document_id",

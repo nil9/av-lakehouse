@@ -18,6 +18,7 @@ GOLD_OUTPUT_PATH="${GOLD_OUTPUT_PATH:-data/gold/vehicle_daily_summary}"
 QUALITY_SILVER_PATH="${QUALITY_SILVER_PATH:-$SILVER_OUTPUT_PATH}"
 export RAW_INPUT_PATH SILVER_OUTPUT_PATH GOLD_OUTPUT_PATH QUALITY_SILVER_PATH
 PIPELINE_FINALIZED=0
+ERROR_SENTINEL_FILE="$LOG_DIR/.pipeline_error_${RUN_STAMP}.flag"
 
 count_files() {
   local path="$1"
@@ -132,6 +133,11 @@ on_error() {
   if [[ "$PIPELINE_FINALIZED" -eq 1 ]]; then
     exit "$exit_code"
   fi
+
+  if [[ -f "$ERROR_SENTINEL_FILE" ]]; then
+    exit "$exit_code"
+  fi
+  touch "$ERROR_SENTINEL_FILE"
 
   set +e
   local end_ts duration json_count silver_count gold_count
